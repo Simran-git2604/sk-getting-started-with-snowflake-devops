@@ -1,4 +1,4 @@
-# Views to transform marketplace data in pipeline
+
 
 import os
 
@@ -56,8 +56,6 @@ and avoid the corresponding storage costs.
 """
 
 pipeline = [
-    # We are interested in the per seat carbon emissions.
-    # To obtain these, we need to divide the emission data by the number of seats in the airplane.
     View(
         name="flight_emissions",
         columns=[
@@ -75,8 +73,7 @@ pipeline = [
         group by departure_airport, arrival_airport
         """,
     ),
-    # To avoid unreliable flight connections, we compute the fraction of flights that arrive
-    # early or on time from the flight status data provided by OAG.
+
     View(
         name="flight_punctuality",
         columns=[
@@ -96,9 +93,7 @@ pipeline = [
         group by departure_iata_airport_code, arrival_iata_airport_code
         """,
     ),
-    # When joining the flight emissions with the punctuality view,
-    # we filter for flights starting from the airport closest to where we live.
-    # This information is provided in the tiny JSON file data/home.json which we query directly in the view.
+
     View(
         name="flights_from_home",
         columns=[
@@ -125,10 +120,7 @@ pipeline = [
                 (FILE_FORMAT => bronze.json_format))
         """,
     ),
-    # Weather Source provides a weather forecast for the upcoming two weeks.
-    # As the free versions of the data sets we use do not cover the entire globe,
-    # we limit our pipeline to zip codes inside the US and compute the average
-    # temperature, humidity, precipitation probability and cloud coverage.
+
     View(
         name="weather_forecast",
         columns=[
@@ -150,8 +142,7 @@ pipeline = [
         group by postal_code
         """,
     ),
-    # We use the data provided by Cybersyn to limit our pipeline to US cities with atleast
-    # 100k residents to enjoy all the benefits a big city provides during our vacation.
+
     View(
         name="major_us_cities",
         columns=[
@@ -179,8 +170,7 @@ pipeline = [
         order by total_population desc
         """,
     ),
-    # Using the geography relationships provided by Cybersyn we collect all the
-    # zip codes belonging to a city.
+
     View(
         name="zip_codes_in_city",
         columns=[
@@ -231,14 +221,11 @@ pipeline = [
         group by city.geo_id, city.geo_name, city.total_population
         """,
     ),
-    # Placeholder: Add new view definition here
+
 ]
 
-
-# entry point for PythonAPI
 root = Root(Session.builder.getOrCreate())
 
-# create views in Snowflake
 silver_schema = root.databases["quickstart_prod"].schemas["silver"]
 silver_schema.user_defined_functions.create(
     map_city_to_airport, mode=CreateMode.or_replace
